@@ -7,7 +7,7 @@ You might have noticed that if you pass the RGB value returned from the built-in
 
 ![](https://github.com/miyako/4d-plugin-mac-color-picker/blob/master/images/picker.png)
 
-For example, the standard window background colour is #E7E7E7.
+For example, the standard window background colour is ```#E7E7E7```.
 
 However, if you pass this value to a form object, or even reference it in SVG, it is rendered slightly darker on an LCD.
 
@@ -17,6 +17,14 @@ c.f. http://stackoverflow.com/questions/14578759/wrong-color-in-interface-builde
 
 This plugin returns the exact RGB needed on screen, if you pass ```Picker standard color space```.
 
-Moreover, it lets you displayed the alpha channel tool if you pass ```Picker RGBA color```.
+The aforementioned ```#E7E7E7``` is converted to ```#EBEBEB```.
+
+![](https://github.com/miyako/4d-plugin-mac-color-picker/blob/master/images/plugin.png)
+
+In addition, it lets you displayed the alpha channel tool if you pass ```Picker RGBA color```.
 
 The alpha value is returned in the most significant byte, currently not used in 4D.
+
+![](https://github.com/miyako/4d-plugin-mac-color-picker/blob/master/images/alpha.png)
+
+Finally, the crayon tool, which displays wrongly on El Capitan + 4D 32 bits, is hidden.
