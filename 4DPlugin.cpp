@@ -228,7 +228,11 @@ void OnStartup()
     //hide crayon on El Capitan (must do this before the application creates its first instance)
     if(NSAppKitVersionNumber > NSAppKitVersionNumber10_10_Max)
     {
+#ifndef __LP64__
         [NSColorPanel setPickerMask:0x007F];
+#else
+        [NSColorPanel setPickerMask:0xFFFF];
+#endif
     }else{
         [NSColorPanel setPickerMask:0xFFFF];
     }
