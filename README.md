@@ -13,6 +13,8 @@ However, if you pass this value to a form object, or even reference it in SVG, i
 
 ![](https://github.com/miyako/4d-plugin-mac-color-picker/blob/master/images/result.png)
 
+Apprently the RGB value must be calibrated for the device colour space.
+
 c.f. http://stackoverflow.com/questions/14578759/wrong-color-in-interface-builder
 
 This plugin returns the exact RGB needed on screen, if you pass ```Picker standard color space```.
