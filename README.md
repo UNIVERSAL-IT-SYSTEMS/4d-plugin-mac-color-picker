@@ -1,6 +1,10 @@
 # 4d-plugin-mac-color-picker
 Alternative color picker for 4D on Mac.
 
+Note
+---
+Consider using the native command and [convert-color-space](https://github.com/miyako/4d-plugin-convert-color-space) to convert the RGB values. Running ```NSColorPanel``` from a plugin has some modality issues.
+
 About
 ---
 You might have noticed that if you pass the RGB value returned from the built-in [Select RGB color](http://doc.4d.com/4Dv15/4D/15/Select-RGB-Color.301-2007529.en.html) command directly to [OBJECT SET RGB COLORS](http://doc.4d.com/4Dv15/4D/15/OBJECT-SET-RGB-COLORS.301-2006928.en.html), you get a slightly **darker** colour.
