@@ -19,7 +19,7 @@ c.f. http://stackoverflow.com/questions/14578759/wrong-color-in-interface-builde
 
 This plugin returns the exact RGB needed on screen, if you pass ```Picker standard color space```.
 
-The aforementioned ```#E7E7E7``` is converted to ```#EBEBEB```.
+The aforementioned ```#E7E7E7``` is converted to ```#ECECEC```.
 
 ![](https://github.com/miyako/4d-plugin-mac-color-picker/blob/master/images/plugin.png)
 
@@ -33,4 +33,6 @@ Finally, the crayon tool, which displays wrongly on El Capitan + 4D 32 bits, is 
 
 Remarks
 ---
-The calibrartion is not perfect; in the above example, the window background should be ```#ECECEC```.
+~~The calibrartion is not perfect; in the above example, the window background should be ```#ECECEC```.~~
+
+The conversion is OK but the panel is not modal to the window that invoked it.
