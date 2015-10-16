@@ -30,3 +30,7 @@ The alpha value is returned in the most significant byte, currently not used in 
 ![](https://github.com/miyako/4d-plugin-mac-color-picker/blob/master/images/alpha.png)
 
 Finally, the crayon tool, which displays wrongly on El Capitan + 4D 32 bits, is hidden.
+
+Remarks
+---
+The calibrartion is not perfect; in the above example, the window background should be ```#ECECEC```.
