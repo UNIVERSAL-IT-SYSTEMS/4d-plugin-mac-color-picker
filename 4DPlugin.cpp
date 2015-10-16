@@ -57,7 +57,7 @@ void CommandDispatcher (PA_long32 pProcNum, sLONG_PTR *pResult, PackagePtr pPara
     id target;
     SEL action;
 }
-- (id)init;
+- (id)initWithRed:(CGFloat)red green:(CGFloat)green blue:(CGFloat)blue alpha:(CGFloat)alpha title:(NSString *)title showsAlpha:(BOOL)showsAlpha;
 - (void)dealloc;
 - (void)pickerWillClose:(id)sender;
 - (void)colorDidChange:(NSNotification *)notification;
@@ -66,12 +66,21 @@ void CommandDispatcher (PA_long32 pProcNum, sLONG_PTR *pResult, PackagePtr pPara
 @end
 
 @implementation Listener
-- (id)init
+- (id)initWithRed:(CGFloat)r green:(CGFloat)g blue:(CGFloat)b alpha:(CGFloat)a title:(NSString *)title showsAlpha:(BOOL)showsAlpha
 {
 	if(!(self = [super init])) return self;
 	
+    red = r;
+    green = g;
+    blue = b;
+    alpha = a;
+    
     NSColorPanel *sharedColorPanel = [NSColorPanel sharedColorPanel];
     
+    sharedColorPanel.showsAlpha = showsAlpha;
+    sharedColorPanel.title = title;
+    sharedColorPanel.color = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:alpha];
+
     [[NSNotificationCenter defaultCenter]
      addObserver:self
      selector:@selector(colorDidChange:)
@@ -87,8 +96,9 @@ void CommandDispatcher (PA_long32 pProcNum, sLONG_PTR *pResult, PackagePtr pPara
     [closeButton setAction:@selector(pickerWillClose:)];
 
     running = YES;
-    
+
     [sharedColorPanel makeKeyAndOrderFront:nil];
+    
     //force redraw, especially after changing the visibility status of the transparancy tool
     [[sharedColorPanel contentView]setNeedsDisplay:YES];
     
@@ -97,11 +107,13 @@ void CommandDispatcher (PA_long32 pProcNum, sLONG_PTR *pResult, PackagePtr pPara
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter]removeObserver:self];
+    
     NSColorPanel *sharedColorPanel = [NSColorPanel sharedColorPanel];
     NSButton *closeButton = [sharedColorPanel standardWindowButton:NSWindowCloseButton];
     //restore original, to avoid conflict with Select RGB color command
     [closeButton setTarget:target];
     [closeButton setAction:action];
+    
     [super dealloc];
 }
 - (void)colorDidChange:(NSNotification *)notification
@@ -146,13 +158,24 @@ namespace ColorPicker
     }
     void Open(ColorPicker::Params *params){
         
-        NSColorPanel *sharedColorPanel = [NSColorPanel sharedColorPanel];
-        
-        sharedColorPanel.showsAlpha = params->showsAlpha;
-        sharedColorPanel.color = [NSColor colorWithDeviceRed:params->red green:params->green blue:params->blue alpha:params->alpha];
-        sharedColorPanel.title = params->title;
-        
-         params->listener = [[Listener alloc]init];
+        params->listener = [[Listener alloc]initWithRed:params->red green:params->green blue:params->blue alpha:params->alpha
+        title:params->title showsAlpha:params->showsAlpha];
+    }
+    void ConvertToStandardColor(CGFloat *red, CGFloat *green, CGFloat *blue, CGFloat *alpha)
+    {
+        //convert to device color space
+        CGFloat components[4] = {*red, *green, *blue, *alpha};
+        NSColor *tempColor = [NSColor colorWithColorSpace:[NSColorSpace genericRGBColorSpace]components:components count:4];
+        tempColor = [tempColor colorUsingColorSpace:[NSColorSpace sRGBColorSpace]];
+        [tempColor getRed:red green:green blue:blue alpha:alpha];
+    }
+    void ConvertToDeviceColor(CGFloat *red, CGFloat *green, CGFloat *blue, CGFloat *alpha)
+    {
+        //convert to device color space
+        CGFloat components[4] = {*red, *green, *blue, *alpha};
+        NSColor *tempColor = [NSColor colorWithColorSpace:[NSColorSpace sRGBColorSpace]components:components count:4];
+        tempColor = [tempColor colorUsingColorSpace:[NSColorSpace genericRGBColorSpace]];
+        [tempColor getRed:red green:green blue:blue alpha:alpha];
     }
 }
 
@@ -171,17 +194,28 @@ void Mac_Select_RGB_color(sLONG_PTR *pResult, PackagePtr pParams)
     NSString *title = Param2.copyUTF16String();
     NSUInteger flags = Param3.getIntValue();
     
+    CGFloat red, green, blue, alpha;
+
+    alpha    = (CGFloat)((color & 0xFF000000) >> 24)  / 0xFF;
+    red      = (CGFloat)((color & 0x00FF0000) >> 16)  / 0xFF;
+	green    = (CGFloat)((color & 0x0000FF00) >> 8)   / 0xFF;
+	blue     = (CGFloat)((color & 0x000000FF))        / 0xFF;
+    
+    BOOL showsAlpha = (flags & 0x0001);
+    BOOL useStandardColorSpace = (flags & 0x0002);
+
+    if(useStandardColorSpace){
+        ColorPicker::ConvertToDeviceColor(&red, &green, &blue, &alpha);
+    }
+    
     ColorPicker::Params params;
     
-    params.showsAlpha   = (flags & 0x0001);
-    
-    params.alpha    = (CGFloat)((color & 0xFF000000) >> 24)  / 0xFF;
-    params.red      = (CGFloat)((color & 0x00FF0000) >> 16)  / 0xFF;
-	params.green    = (CGFloat)((color & 0x0000FF00) >> 8)   / 0xFF;
-	params.blue     = (CGFloat)((color & 0x000000FF))        / 0xFF;
-    
-    params.title    = title;
-    params.alpha    = params.showsAlpha ? params.alpha : 1.0f;
+    params.showsAlpha   = showsAlpha;
+    params.alpha        = showsAlpha ? alpha : 1.0f;
+    params.red          = red;
+    params.green        = green;
+    params.blue         = blue;
+    params.title        = title;
     
     PA_RunInMainProcess((PA_RunInMainProcessProcPtr)ColorPicker::Open, &params);
     
@@ -191,29 +225,23 @@ void Mac_Select_RGB_color(sLONG_PTR *pResult, PackagePtr pParams)
     }
     
     PA_RunInMainProcess((PA_RunInMainProcessProcPtr)ColorPicker::Close, NULL);
-
-    CGFloat red, green, blue, alpha;
     
     [params.listener getRed:&red green:&green blue:&blue alpha:&alpha];
+    
     [params.listener release];
     
-    BOOL useStandardColorSpace = (flags & 0x0002);
-    
     if(useStandardColorSpace){
-        //convert to device color space
-        CGFloat components[4] = {red, green, blue, alpha};
-        NSColor *tempColor = [NSColor colorWithColorSpace:[NSColorSpace genericRGBColorSpace]
-            components:components count:4];
-        tempColor = [tempColor colorUsingColorSpace:[NSColorSpace sRGBColorSpace]];
-        [tempColor getRed:&red green:&green blue:&blue alpha:&alpha];
+        ColorPicker::ConvertToStandardColor(&red, &green, &blue, &alpha);
     }
     
-    color = params.showsAlpha ? ((NSUInteger)(alpha * 0xFF) << 24) : 0;
+    //https://developer.apple.com/library/mac/qa/qa1576/_index.html
+    
+    color = params.showsAlpha ? ((NSUInteger)(alpha * 255.99999f) << 24) : 0;
     
     color = color
-        +((NSUInteger)(red      * 0xFF) << 16)
-        +((NSUInteger)(green    * 0xFF) << 8)
-        + (NSUInteger)(blue     * 0xFF);
+        +((NSUInteger)(red      * 255.99999f) << 16)
+        +((NSUInteger)(green    * 255.99999f) << 8)
+        + (NSUInteger)(blue     * 255.99999f);
     
     returnValue.setIntValue(color);
 	returnValue.setReturn(pResult);
@@ -237,4 +265,3 @@ void OnStartup()
         [NSColorPanel setPickerMask:0xFFFF];
     }
 }
-
